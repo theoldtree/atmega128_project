@@ -42,25 +42,25 @@ ISR(INT4_vect){
     _delay_ms(100);
     EIFR |= 0x10;
     if((PINE & 0x10)==0x10) return;
-    song[] = {MI,RE,DO,RE,MI,MI,MI,RE,RE,RE,MI,SOL,SOL,MI,RE,DO,RE,MI,MI,MI,RE,RE,MI,RE,DO,EOS};
-    delay[] = {N4,N4,N4,N4,N4,N4,N2,N4,N4,N2,N4,N4,N2,N4,N4,N4,N4,N4,N4,N2,N4,N4,N4,N4,N2};
     i = 0; 
+    song[] = {MI,RE,DO,RE,MI,REST,MI,REST,MI,RE,REST,RE,REST,RE,MI,SOL,REST,SOL,MI,RE,DO,RE,MI,REST,MI,REST,MI,RE,REST,RE,MI,RE,DO,EOS};
+    time[] = {N4,N4,N4,N4,N4,R,N4,R,N2,N4,R,N4,R,N2,N4,N4,R,N2,N4,N4,N4,N4,N4,R,N4,R,N2,N4,R,N4,N4,N4,N2};
 }
 ISR(INT5_vect){
     _delay_ms(100);
     EIFR |= 0x10;
     if((PINE & 0x20)==0x20) return;
-    song[] = {EOS};
-    delay[] = {};
     i = 0; 
+    song[] = {SOL, MI, REST, MI, SOL, MI, DO, RE, MI, RE, DO, MI, SOL, DDO, SOL, DDO, SOL, DDO, SOL, MI, SOL, RE, FA, MI, RE, DO, EOS};
+    time[] = {N4, N8, R, N8, N8, N8, N4, N4, N8, N8, N8, N8, N4, N8N18, N16, N8, N8, N8, N8, N4, N4, N8, N8, N8, N8, N4};
 }
 ISR(INT6_vect){
     _delay_ms(100);
     EIFR |= 0x10;
     if((PINE & 0x40)==0x40) return;
-    song[] = {EOS};
-    delay[] = {};
     i = 0; 
+    song[] = {EOS};
+    time[] = {};
 }
 
 int main(){
