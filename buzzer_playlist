@@ -1,0 +1,87 @@
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#define F_CPU 16000000UL
+#define __DELAY_BACKWARD_COMPATIBLE__
+#include <util/delay.h>
+#define ON 1
+#define OFF 1
+#define DO 0
+#define RE 1
+#define MI 2
+#define FA 3
+#define SOL 4
+#define RA 5
+#define SI 6
+#define DDO 7
+#define REST 8
+#define EOS -1
+#define N2 1250
+#define N4 625
+#define N8N16 469
+#define N8 313
+#define N16 156
+#define R 1
+volatile int song_num=0, state=OFF, i=0, tone;
+volatile int song[] = {MI,RE,DO,RE,MI,MI,MI,RE,RE,RE,MI,SOL,SOL,MI,RE,DO,RE,MI,MI,MI,RE,RE,MI,RE,DO,EOS};
+volatile int time[] = {N4,N4,N4,N4,N4,N4,N2,N4,N4,N2,N4,N4,N2,N4,N4,N4,N4,N4,N4,N2,N4,N4,N4,N4,N2};
+int f_table[] = {17,44,66,78,97,114,130,137};
+char LED[] = {0x01,0x03,0x07,0x0f,0x1f,0x3f,0x7f,0xff};
+
+ISR(TIMER0_OVF_vect){
+    TCNT0 = f_table[tone];
+    if(state == OFF){
+        PORTB |= 0x10;
+        state = ON;
+    }
+    else {
+        PORTB &= 0xef;
+        state = OFF;
+    }
+}
+ISR(INT4_vect){
+    _delay_ms(100);
+    EIFR |= 0x10;
+    if((PINE & 0x10)==0x10) return;
+    song[] = {MI,RE,DO,RE,MI,MI,MI,RE,RE,RE,MI,SOL,SOL,MI,RE,DO,RE,MI,MI,MI,RE,RE,MI,RE,DO,EOS};
+    delay[] = {N4,N4,N4,N4,N4,N4,N2,N4,N4,N2,N4,N4,N2,N4,N4,N4,N4,N4,N4,N2,N4,N4,N4,N4,N2};
+    i = 0; 
+}
+ISR(INT5_vect){
+    _delay_ms(100);
+    EIFR |= 0x10;
+    if((PINE & 0x20)==0x20) return;
+    song[] = {EOS};
+    delay[] = {};
+    i = 0; 
+}
+ISR(INT6_vect){
+    _delay_ms(100);
+    EIFR |= 0x10;
+    if((PINE & 0x40)==0x40) return;
+    song[] = {EOS};
+    delay[] = {};
+    i = 0; 
+}
+
+int main(){
+    DDRA = 0xff;
+    DDRB = 0xff;
+    DDRE = 0x00;
+    sei();
+    TCCR0 = 0x03;
+    TIMSK = 0x01;
+    EIMSK = 0x70;
+    EICRB = 0x2a;
+    TCNT0 = f_table[song[i]];
+    while(1){
+        i=0;
+        do{
+            tone = song[i];
+            PORTA = LED[tone];
+            _delay_ms(time[i++]);
+        }while(tone != EOS);
+    }
+}
+
+    
+
