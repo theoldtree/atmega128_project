@@ -2,86 +2,140 @@
 #include <avr/interrupt.h>
 #define F_CPU 16000000UL
 #define __DELAY_BACKWARD_COMPATIBLE__
+
 #include <util/delay.h>
-#define ON 1
-#define OFF 1
-#define DO 0
-#define RE 1
-#define MI 2
-#define FA 3
-#define SOL 4
-#define RA 5
-#define SI 6
-#define DDO 7
-#define REST 8
-#define EOS -1
-#define N2 1250
-#define N4 625
-#define N8N16 469
-#define N8 313
-#define N16 156
-#define R 1
-volatile int song_num=0, state=OFF, i=0, tone;
-volatile int song[] = {MI,RE,DO,RE,MI,MI,MI,RE,RE,RE,MI,SOL,SOL,MI,RE,DO,RE,MI,MI,MI,RE,RE,MI,RE,DO,EOS};
-volatile int time[] = {N4,N4,N4,N4,N4,N4,N2,N4,N4,N2,N4,N4,N2,N4,N4,N4,N4,N4,N4,N2,N4,N4,N4,N4,N2};
-int f_table[] = {17,44,66,78,97,114,130,137};
-char LED[] = {0x01,0x03,0x07,0x0f,0x1f,0x3f,0x7f,0xff};
 
-ISR(TIMER0_OVF_vect){
-    TCNT0 = f_table[tone];
-    if(state == OFF){
-        PORTB |= 0x10;
-        state = ON;
-    }
-    else {
-        PORTB &= 0xef;
-        state = OFF;
-    }
-}
-ISR(INT4_vect){
-    _delay_ms(100);
-    EIFR |= 0x10;
-    if((PINE & 0x10)==0x10) return;
-    i = 0; 
-    song[] = {MI,RE,DO,RE,MI,REST,MI,REST,MI,RE,REST,RE,REST,RE,MI,SOL,REST,SOL,MI,RE,DO,RE,MI,REST,MI,REST,MI,RE,REST,RE,MI,RE,DO,EOS};
-    time[] = {N4,N4,N4,N4,N4,R,N4,R,N2,N4,R,N4,R,N2,N4,N4,R,N2,N4,N4,N4,N4,N4,R,N4,R,N2,N4,R,N4,N4,N4,N2};
-}
-ISR(INT5_vect){
-    _delay_ms(100);
-    EIFR |= 0x10;
-    if((PINE & 0x20)==0x20) return;
-    i = 0; 
-    song[] = {SOL, MI, REST, MI, SOL, MI, DO, RE, MI, RE, DO, MI, SOL, DDO, SOL, DDO, SOL, DDO, SOL, MI, SOL, RE, FA, MI, RE, DO, EOS};
-    time[] = {N4, N8, R, N8, N8, N8, N4, N4, N8, N8, N8, N8, N4, N8N18, N16, N8, N8, N8, N8, N4, N4, N8, N8, N8, N8, N4};
-}
-ISR(INT6_vect){
-    _delay_ms(100);
-    EIFR |= 0x10;
-    if((PINE & 0x40)==0x40) return;
-    i = 0; 
-    song[] = {EOS};
-    time[] = {};
+#define DO      0
+#define RE      1
+#define MI      2
+#define FA      3
+#define SOL     4
+#define RA      5
+#define SI      6
+#define DDO     7
+#define REST    8
+#define EOS     -1
+#define ON      0
+#define OFF     1
+#define N2      1250
+#define N4      625
+#define N8N16   469
+#define N8      313
+#define N16     156
+#define R       1
+#define SONG_1   1
+#define SONG_2   2
+#define SONG_3   3
+
+volatile int state, tone, song = SONG_1; // 상태, 음계, 노래를 저장하기 위한 변수
+volatile int song_index[] = {0,0,0};
+// 도레미파솔라시도에 해당하는 TCNT0 값
+char f_table[] = {17, 43, 66, 77, 97, 114, 117, 137, 255};
+
+// 비행기 음계와 박자
+int song_1[] = {MI, RE, DO, RE, MI, REST, MI, REST, MI, RE, REST, RE, REST, RE, 
+MI, REST, SOL, REST, SOL, REST, MI, RE, DO, RE, MI, REST, MI, REST, MI, RE, REST, 
+RE, MI, RE, DO, EOS};
+int time_1[] = {N4,N4,N4,N4,N4,R,N4,R,N2,N4,R,N4,R,N2,N4,N4,R,N2,N4,N4,N4,N4,N4,
+R,N4,R,N2,N4,R,N4,N4,N4,N2};
+
+// 산토끼 음계와 박자
+int song_2[] = {SOL, MI, REST, MI, SOL, MI, DO, RE, MI, RE, DO, MI, SOL, 
+DDO,SOL, DDO, SOL, DDO, SOL, MI, SOL, RE, FA, MI, RE, DO, EOS}; 
+int time_2[] = {N4, N8, R, N8, N8, N8, N4, N4, N8, N8, N8, N8, N4,
+N8N16, N16, N8, N8, N8, N8, N4, N4, N8, N8, N8, N8, N4}; 
+
+//학교종이 땡땡땡 음계와 박자
+int song_3[] = {SOL, REST, SOL, RA, REST, RA, SOL, REST, SOL, MI, SOL, REST, 
+SOL, MI, REST, MI, RE, RE, SOL, REST, SOL, RA, REST, RA, SOL, REST, SOL, MI, 
+SOL, MI, RE, MI, DO, DO, EOS};
+int time_3[] = {N4, R, N4, N4, R, N4, N4, R, N4, N2, N4, R, N4, N4, R, N4, N2, 
+N4, N4, R, N4, N4, R, N4, N4, R, N4, N2, N4, N4, N4, N4, N2, N4};
+
+// 각 음계에 따라 켜지는 LED
+char LED[] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x00};
+
+// 음계를 내기 위한 인터럽트 서비스 루틴
+ISR(TIMER0_OVF_vect) // TCNT0값에 오버플로우가 발생하면 실행됨 
+{
+   TCNT0 = f_table[tone]; // 오버플로우가 발생한 후 다시 TCNT0값 해당음계로 초기화
+   if (state == ON) // on 상태이면
+   {
+      PORTB |= 1 << 4; // 4번핀에 1을 입력
+      state = OFF; // 상태교환
+   }
+   else // off 상태이면
+   {
+      PORTB &= ~(1 << 4); // 4번핀에 0대입
+      state = ON; // 상태교환
+   }
 }
 
-int main(){
-    DDRA = 0xff;
-    DDRB = 0xff;
-    DDRE = 0x00;
-    sei();
-    TCCR0 = 0x03;
-    TIMSK = 0x01;
-    EIMSK = 0x70;
-    EICRB = 0x2a;
-    TCNT0 = f_table[song[i]];
+ISR(INT4_vect) // 스위치를 눌러 falling edge가 감지되면 인터럽트서비스루틴이 실행됨
+{
+   _delay_ms(100); // 디바운싱
+   EIFR = 1 << 4; // 비트클리어
+   if ((PINE & 0x10) == 0x10) return; // 스위치가 눌린게 아니면
+   if (song == SONG_1) // 1번 노래인 경우
+   {
+      // 2번 노래로 교환 후 1,3번노래 인덱스 초기화
+      song = SONG_2;
+      song_index[0] = 0; 
+      song_index[2] = 0;
+   }
+   else if (song == SONG_2) // 2번 노래인 경우
+   {
+      // 3번 노래로 교환 후 1,2번노래 인덱스 초기화
+      song = SONG_3; 
+      song_index[0] = 0;
+      song_index[1] = 0;
+   }
+   else // 3번 뇨래인 경우
+   {
+      // 1번 노래로 교환 후 2,3번노래 인덱스 초기화
+      song = SONG_1; 
+      song_index[1] = 0;
+      song_index[2] = 0;
+   }
+}
+
+int main(void)
+{
+   DDRA = 0xff; // A포트를 출력으로 설정
+   DDRB |= 0x10; // B포트의 4번핀을 출력으로 설정
+   DDRE = 0x00; // E포트를 입력으로 설정
+   sei(); // 전역 인터럽트 활성화
+   EIMSK = 0x10; // INT4 활성화
+   EICRB = 0x02; // INT4 falling edge일 시 발생
+   TIMSK = 0x01; // TIMER0 활성화
+   TCCR0 = 0x03; // 프리스케일러를 32분주로 설정
+   TCNT0 = f_table[song_1[song_index[0]]]; // 1번 노래의 첫음의 TCNT0값 대입
+   
     while(1){
-        i=0;
         do{
-            tone = song[i];
+        if(song==SONG_1){ // 1번 노래일 경우
+            TCNT0 = f_table[song_1[song_index[0]]];  // 인덱스 값에 해당하는 TCNT0값 대입
+            tone = song_1[song_index[0]]; // 인덱스에 해당하는 음 대입
+            PORTA = LED[tone]; // 인덱스에 해당하는 LED 출력
+            _delay_ms(time_1[song_index[0]]); // 인덱스 값에 해당하는 시간만큼 딜레이
+            song_index[0] += 1; // 인덱스 값 증가
+        }
+        // 원리는 1번 노래와 같음
+        else if(song==SONG_2){ // 2번 노래일 경우
+            TCNT0 = f_table[song_2[song_index[1]]];
+            tone = song_2[song_index[1]];
             PORTA = LED[tone];
-            _delay_ms(time[i++]);
-        }while(tone != EOS);
+            _delay_ms(time_2[song_index[1]]);
+            song_index[1] += 1;
+        }
+        // 원리는 1번 노래와 같음
+        else{ // 3번 노래일 경우
+            TCNT0 = f_table[song_3[song_index[2]]];
+            tone = song_3[song_index[2]];
+            PORTA = LED[tone];
+            _delay_ms(time_3[song_index[2]]);
+            song_index[2] += 1;
+        }
+        }while (tone!=EOS); // 노래가 종료될때 까지 진행
     }
 }
-
-    
-
