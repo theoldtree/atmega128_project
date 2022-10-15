@@ -22,18 +22,27 @@ STBY = 0
 volatile int count = 0, value = 0;
 volatile int state = OFF;
 volatile int strength = WEAK;
-int motor_speed[4] = {LOW_SPEED,MID_SPEED,HIGH_SPEED}
+int motor_speed[3] = {LOW_SPEED,MID_SPEED,HIGH_SPEED}
 
 ISR(INT4_vect){
-    if(state == ON) state = OFF;
-    else state == ON;
+    -_delay_ms(100);
+    EIFR |= 0x10;
+    if((PINE & 0x10) == 0x10) return;
+    if(state == ON) state = BREAK;
+    else if(state == BREAK) == ON;
 }
 ISR(INT5_vect){
+    -_delay_ms(100);
+    EIFR |= 0x20;
+    if((PINE & 0x20) == 0x20) return;
     if(motor_speed == WEAK) motor_speed = MID;
     else if(motor_speed == MID) motor_speed = STR;
     else motor_speed = WEAK;
 }
 ISR(INT6_vect){
+    -_delay_ms(100);
+    EIFR |= 0x40;
+    if((PINE & 0x40) == 0x40) return;
     state = STOP;
 }
 
@@ -48,7 +57,8 @@ int main(void){
     PORTB = MOTOR_CW;
     while(1){
         if(state == ON){
-            OCR2 = motor_speed[strength]
+            PORTB = MOTOR_CW;
+            OCR2 = motor_speed[strength];
         }
         else if(state == BREAK){
             PORTB = MOTOR_BREAK;
