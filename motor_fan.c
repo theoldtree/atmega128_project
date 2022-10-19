@@ -44,7 +44,9 @@ ISR(INT6_vect){
    state=STOP;
 }
 ISR(TIMER0_OVF_vect){
-   // TCNT0 = 49;
+   if(count < 2000) TCNT0 = 0x06;
+   else PORTB = MOTOR_BREAK;
+   count ++;
 }
 
 int main(void){
@@ -56,13 +58,8 @@ int main(void){
    EICRB = 0x2a;
    TCCR2 = 0x6b;
    PORTB = MOTOR_CW;
-   TCCR0 = 0x07; // 1024 분주
-   /* 타이머 클럭의 주기는 64us
-   원하는 시간 5 000 000 us
-   따라서 필요한 클록 사이클
-   5000000/64 = 78125
-   */
-   TIMSK = 0x01;
+   TCCR0 = 0x06; 
+   TIMSK |= 0x01;
    while(1){
       if(state == ON){
          PORTB = MOTOR_CW;
@@ -72,8 +69,7 @@ int main(void){
          PORTB = MOTOR_BREAK;
       }
       else if(state == STOP){
-        // TCNT0 = 0;
-         PORTB = MOTOR_BREAK;
+         TCNT0 = 0x06;
       }
    }
 }
