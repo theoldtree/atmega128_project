@@ -96,11 +96,11 @@ ISR(INT4_vect) // 스위치를 눌러 falling edge가 감지되면 인터럽트�
 }
 
 void playSong(int song[], int time[]){ // 노래를 플레이하기 위한 함수
-   TCNT0 = f_table[song[song_index]];  // 인덱스 값에 해당하는 TCNT0값 대입
-   tone = song[song_index]; // 인덱스에 해당하는 음 대입
-   PORTA = LED[tone]; // 인덱스에 해당하는 LED 출력
-   _delay_ms(time[song_index]); // 인덱스 값에 해당하는 시간만큼 딜레이
-   song_index += 1; // 인덱스 값 증가
+   do{
+      tone = song[song_index]; //계이름 설정
+      PORTA = LED[tone]; // LED 점등
+      _delay_ms(time[song_index++]); // 박자 유지
+   }while(tone != EOS); // 노래가 종료 될때까지 반복
 }
 
 int main(void)
@@ -116,7 +116,6 @@ int main(void)
    TCNT0 = f_table[song_1[song_index]]; // 1번 노래의 첫음의 TCNT0값 대입
    
     while(1){
-        do{
         if(now_song==SONG_1){ // 1번 노래일 경우
             playSong(song_1,time_1); // 1번 노래 재생
         }
@@ -126,6 +125,5 @@ int main(void)
         else{ // 3번 노래일 경우
             playSong(song_3,time_3); // 3번 노래 재생
         }
-        }while (tone!=EOS); // 노래가 종료될때 까지 진행
     }
 }
