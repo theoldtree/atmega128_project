@@ -18,7 +18,8 @@
 void CLCD_cmd(char); // 명령어 전송 함수
 void CLCD_data(char); // 데이터 Write 함수
 void CLCD_puts(char *); // 문자열 처리 함수
-char num[4];
+char num[4]; // 네자리 숫자를 저장할 변수
+
 void init_adc()
 {
    ADMUX = 0x40;
@@ -30,6 +31,7 @@ void init_adc()
    // ADFR = 0 : single conversion(한번만 변환) 모드
    // ADPS(2:0) = 111 : 프리스케일러 128분주, 0.125Mhz 주기
 }
+
 unsigned short read_adc()
 {
    unsigned char adc_low, adc_high;
@@ -70,11 +72,13 @@ int main(void)
       CLCD_puts(num); // 문자열을 display함
    }
 }
+
 void CLCD_puts(char *ptr) // 문자열을 write하는 함수
 {
    while(*ptr != NULL) // 문자열이 마지막(NULL)인지 검사
    CLCD_data(*ptr++); // 마지막이 아니면 1 문자 디스플레이
 }
+
 void CLCD_data(char data) // 데이터를 wite 하는 함수
 {
    PORTD = 0x04; // 0b0000100, E(bit4)=0, R/W(bit3)=0,
