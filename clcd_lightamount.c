@@ -96,6 +96,7 @@ void CLCD_data(char data) // 데이터를 wite 하는 함수
    PORTD = 0x04; // 0b00000100, E(bit4)=0, R/W(bit3)=0,RS(bit2)=1 사이클 종료
    _delay_ms(1); // Hold Time & Execution Time
 }
+
 void CLCD_cmd(char cmd) // 명령어 전송 함수
 {
    PORTD = 0x00; // 0b0000000, E(bit4)=0, R/W(bit3)=0,
