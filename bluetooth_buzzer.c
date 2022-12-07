@@ -3,7 +3,6 @@
 #define F_CPU 16000000UL
 #define __DELAY_BACKWARD_COMPATIBLE__
 #include <util/delay.h>
-
 #define ON 1 //버저 ON
 #define OFF 0 //버저 OFF
 #define NULL 0
@@ -17,38 +16,16 @@
 #define DDO 7
 
 char f_table[] = {17,43,66,77,97,114,129,137};
-
 volatile int tone ;
-volatile int sound_pulse = OFF;
+volatile int buzzer = OFF;
 int state = OFF;
 int index = 0;
 char tone_num[8];
 char set_message[] = "\nOk let's play the piano!\n";
-
 void init_uart1(); // uart1 초기화 함수
 void putchar1(char c); //1문자를 송신하는 함수
 void puts(char *ptr); //문자열을 송신하는 함수
 char getchar1(); //1문자를 수신하는 함수
-
-
-ISR(TIMER0_OVF_vect) //Timer/counter0 오버플로우 인터럽트 서비스 루틴
-{
-   TCNT0 = f_table[tone]; //TCNT0 초기화(주어진 음을 만들기 위한)
-   if(state==ON)
-   {
-      if (sound_pulse == OFF)
-      {
-         PORTE |= 1<<4; //버저 포트 ON (다른 기능은 그대로 두고 PB4만)
-         sound_pulse = ON;
-      }
-      else
-      {
-         PORTE &= ~(1<<4); //다른 기능은 그대로 두고 PB4 포트만 OFF
-         sound_pulse = OFF;
-      }
-   }
-   
-}
 
 ISR(USART1_RX_vect) //UART1 receive interrupt routine
 {
@@ -58,7 +35,6 @@ ISR(USART1_RX_vect) //UART1 receive interrupt routine
    {
       c = UDR1; //어떤 음을 연주할지에 대해 사용자 지정 음을 받음
       putchar1(c); //echo back
-      
       if (c == tone_num[0]) {tone = 0;}
       else if(c == tone_num[1]) {tone = 1;}
       else if(c == tone_num[2]) {tone = 2;}
@@ -80,6 +56,25 @@ ISR(USART1_RX_vect) //UART1 receive interrupt routine
       }
       index++;
    }
+}
+
+ISR(TIMER0_OVF_vect) //Timer/counter0 오버플로우 인터럽트 서비스 루틴
+{
+   TCNT0 = f_table[tone]; //TCNT0 초기화(주어진 음을 만들기 위한)
+   if(state==ON)
+   {
+      if (buzzer == OFF)
+      {
+         PORTE |= 1<<4; //버저 포트 ON (다른 기능은 그대로 두고 PB4만)
+         buzzer = ON;
+      }
+      else
+      {
+         PORTE &= ~(1<<4); //다른 기능은 그대로 두고 PB4 포트만 OFF
+         buzzer = OFF;
+      }
+   }
+   
 }
 
 int main()
